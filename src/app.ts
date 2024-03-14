@@ -1,8 +1,26 @@
 // Code goes here!
+// Project type
+enum ProjectStatus {
+     Active,
+     Finished,
+}
+
+class Project {
+     constructor(
+          public id: string,
+          public title: string,
+          public description: string,
+          public people: number,
+          public status: ProjectStatus
+     ) {}
+}
+
 // projectState mangment Class
 
+type Listener = (items: Project[]) => void;
+
 class ProjectState {
-     private projects: any[] = [];
+     private projects: Project[] = [];
      private static instance: ProjectState; // same type of classs
      private listeners: any[] = [];
 
@@ -16,12 +34,13 @@ class ProjectState {
      }
 
      addProject(title: string, description: string, numOfPeople: number) {
-          const newProject = {
-               id: Math.random().toString(),
-               title: title,
-               description: description,
-               people: numOfPeople,
-          };
+          const newProject = new Project(
+               Math.random().toString(),
+               title,
+               description,
+               numOfPeople,
+               ProjectStatus.Active
+          );
 
           this.projects.push(newProject);
           for (const listenerFn of this.listeners) {
@@ -29,7 +48,7 @@ class ProjectState {
           }
      }
 
-     addListener(listenerFn: Function) {
+     addListener(listenerFn: Listener) {
           this.listeners.push(listenerFn);
      }
 }
@@ -105,7 +124,7 @@ class ProjecList {
      templateElement: HTMLTemplateElement; // main templet
      hostElement: HTMLDivElement; // select the div
      element: HTMLElement; // select the form
-     assignedProjects: any[];
+     assignedProjects: Project[];
      constructor(private type: "active" | "finished") {
           this.assignedProjects = [];
           this.templateElement = document.getElementById(
@@ -119,7 +138,7 @@ class ProjecList {
 
           this.element = importedNode.firstElementChild as HTMLElement;
           this.element.id = `${this.type}-projects`; // set the css to the form
-          projectState.addListener((projects: any[]) => {
+          projectState.addListener((projects: Project[]) => {
                this.assignedProjects = projects;
                this.renderProjects();
           }); // whe shpuld pass function to call
