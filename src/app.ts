@@ -17,14 +17,23 @@ class Project {
 
 // projectState mangment Class
 
-type Listener = (items: Project[]) => void;
+type Listener<T> = (items: T[]) => void;
 
-class ProjectState {
+class State<T> {
+     protected listeners: Listener<T>[] = [];
+
+     addListener(listenerFn: Listener<T>) {
+          this.listeners.push(listenerFn);
+     }
+}
+
+class ProjectState extends State<Project> {
      private projects: Project[] = [];
      private static instance: ProjectState; // same type of classs
-     private listeners: any[] = [];
 
-     private constructor() {}
+     private constructor() {
+          super();
+     }
      static getInstance() {
           if (this.instance) {
                return this.instance;
@@ -46,10 +55,6 @@ class ProjectState {
           for (const listenerFn of this.listeners) {
                listenerFn(this.projects.slice());
           }
-     }
-
-     addListener(listenerFn: Listener) {
-          this.listeners.push(listenerFn);
      }
 }
 
@@ -224,22 +229,10 @@ class ProjectInput extends Component<HTMLDivElement, HTMLFormElement> {
           this.peopeleInputElement = this.element.querySelector(
                "#people"
           ) as HTMLInputElement;
-          // this.templateElement = document.getElementById(
-          //      "project-input"
-          // )! as HTMLTemplateElement;
-          // this.hostElement = document.getElementById("app")! as HTMLDivElement; // put the app
-          // const importedNode = document.importNode(
-          //      this.templateElement.content,
-          //      true
-          // );
-
-          // this.element = importedNode.firstElementChild as HTMLFormElement;
-          // this.element.id = "user-input"; // set the css to the form
 
           // get the data from the dom
 
           this.configure();
-          // this.attach(); // attach the form
      }
      configure() {
           this.element.addEventListener(
@@ -249,11 +242,6 @@ class ProjectInput extends Component<HTMLDivElement, HTMLFormElement> {
      }
 
      renderContent() {}
-
-     // private attach() {
-     //      // attach the templet on the DOM
-     //      this.hostElement.insertAdjacentElement("afterbegin", this.element);
-     // }
 
      private gatherUserInput(): [string, string, number] | void {
           const enteredTitle = this.titleInputElement.value;
