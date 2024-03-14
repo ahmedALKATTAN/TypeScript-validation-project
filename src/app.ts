@@ -139,7 +139,13 @@ class ProjecList {
           this.element = importedNode.firstElementChild as HTMLElement;
           this.element.id = `${this.type}-projects`; // set the css to the form
           projectState.addListener((projects: Project[]) => {
-               this.assignedProjects = projects;
+               const relevantProjects = projects.filter((proj) => {
+                    if (this.type === "active") {
+                         return proj.status === ProjectStatus.Active;
+                    }
+                    return proj.status === ProjectStatus.Finished;
+               });
+               this.assignedProjects = relevantProjects;
                this.renderProjects();
           }); // whe shpuld pass function to call
           this.attach();
@@ -149,6 +155,8 @@ class ProjecList {
           const listEl = document.getElementById(
                `${this.type}-projects-list`
           )! as HTMLUListElement;
+
+          listEl.innerHTML = "";
 
           for (const prjItem of this.assignedProjects) {
                const listItem = document.createElement("li");
