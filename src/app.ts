@@ -117,27 +117,71 @@ function autobind(_: any, _2: string, descriptor: PropertyDescriptor) {
 
      return adjDescriptor;
 }
-// project  list class
+// Component Base Class
 
-class ProjecList {
-     // render the elements ov the active and finsished lists
+abstract class Component<T extends HTMLElement, U extends HTMLElement> {
      templateElement: HTMLTemplateElement; // main templet
-     hostElement: HTMLDivElement; // select the div
-     element: HTMLElement; // select the form
-     assignedProjects: Project[];
-     constructor(private type: "active" | "finished") {
-          this.assignedProjects = [];
+     hostElement: T; // select the div
+     element: U; // select the form
+
+     constructor(
+          templateId: string,
+          hostElementId: string,
+          insertAtStart: boolean,
+          newElementId?: string
+     ) {
           this.templateElement = document.getElementById(
-               "project-list"
+               templateId
           )! as HTMLTemplateElement;
-          this.hostElement = document.getElementById("app")! as HTMLDivElement; // put the app
+          this.hostElement = document.getElementById(hostElementId)! as T; // put the app
           const importedNode = document.importNode(
                this.templateElement.content,
                true
           );
 
-          this.element = importedNode.firstElementChild as HTMLElement;
-          this.element.id = `${this.type}-projects`; // set the css to the form
+          this.element = importedNode.firstElementChild as U;
+
+          if (newElementId) {
+               this.element.id = newElementId; // set the css to the form
+          }
+
+          this.attach(insertAtStart);
+     }
+
+     private attach(insertAtBeginning: boolean) {
+          this.hostElement.insertAdjacentElement(
+               insertAtBeginning ? "afterbegin" : "beforeend",
+               this.element
+          );
+     }
+
+     // forcing each class who are inherithg from these method to have them
+
+     abstract configure(): void;
+     abstract renderContent(): void;
+}
+
+// project  list class
+
+class ProjecList extends Component<HTMLDivElement, HTMLElement> {
+     // render the elements ov the active and finsished lists
+
+     assignedProjects: Project[];
+     constructor(private type: "active" | "finished") {
+          super("project-list", "app", false, `${type}-projects`);
+          this.assignedProjects = [];
+          this.configure();
+          this.renderContent();
+     }
+
+     renderContent() {
+          const listId = `${this.type}-projects-list`;
+          this.element.querySelector("ul")!.id = listId;
+          this.element.querySelector("h2")!.textContent =
+               this.type.toUpperCase() + " PROJECTS";
+     }
+
+     configure() {
           projectState.addListener((projects: Project[]) => {
                const relevantProjects = projects.filter((proj) => {
                     if (this.type === "active") {
@@ -148,8 +192,6 @@ class ProjecList {
                this.assignedProjects = relevantProjects;
                this.renderProjects();
           }); // whe shpuld pass function to call
-          this.attach();
-          this.renderContent();
      }
      private renderProjects() {
           const listEl = document.getElementById(
@@ -164,40 +206,15 @@ class ProjecList {
                listEl.appendChild(listItem);
           }
      }
-     private renderContent() {
-          const listId = `${this.type}-projects-list`;
-          this.element.querySelector("ul")!.id = listId;
-          this.element.querySelector("h2")!.textContent =
-               this.type.toUpperCase() + " PROJECTS";
-     }
-     private attach() {
-          this.hostElement.insertAdjacentElement("beforeend", this.element);
-     }
 }
 
 //project class
-class ProjectInput {
-     templateElement: HTMLTemplateElement; // main templet
-     hostElement: HTMLDivElement; // select the div
-     element: HTMLFormElement; // select the form
-
+class ProjectInput extends Component<HTMLDivElement, HTMLFormElement> {
      titleInputElement: HTMLInputElement;
      descriptionInputElement: HTMLInputElement;
      peopeleInputElement: HTMLInputElement;
      constructor() {
-          this.templateElement = document.getElementById(
-               "project-input"
-          )! as HTMLTemplateElement;
-          this.hostElement = document.getElementById("app")! as HTMLDivElement; // put the app
-          const importedNode = document.importNode(
-               this.templateElement.content,
-               true
-          );
-
-          this.element = importedNode.firstElementChild as HTMLFormElement;
-          this.element.id = "user-input"; // set the css to the form
-
-          // get the data from the dom
+          super("project-input", "app", true, "user-input");
           this.titleInputElement = this.element.querySelector(
                "#title"
           ) as HTMLInputElement;
@@ -207,15 +224,36 @@ class ProjectInput {
           this.peopeleInputElement = this.element.querySelector(
                "#people"
           ) as HTMLInputElement;
+          // this.templateElement = document.getElementById(
+          //      "project-input"
+          // )! as HTMLTemplateElement;
+          // this.hostElement = document.getElementById("app")! as HTMLDivElement; // put the app
+          // const importedNode = document.importNode(
+          //      this.templateElement.content,
+          //      true
+          // );
+
+          // this.element = importedNode.firstElementChild as HTMLFormElement;
+          // this.element.id = "user-input"; // set the css to the form
+
+          // get the data from the dom
 
           this.configure();
-          this.attach(); // attach the form
+          // this.attach(); // attach the form
+     }
+     configure() {
+          this.element.addEventListener(
+               "submit",
+               this.submitHandler.bind(this)
+          ); // listen to button selection or on click
      }
 
-     private attach() {
-          // attach the templet on the DOM
-          this.hostElement.insertAdjacentElement("afterbegin", this.element);
-     }
+     renderContent() {}
+
+     // private attach() {
+     //      // attach the templet on the DOM
+     //      this.hostElement.insertAdjacentElement("afterbegin", this.element);
+     // }
 
      private gatherUserInput(): [string, string, number] | void {
           const enteredTitle = this.titleInputElement.value;
@@ -267,13 +305,6 @@ class ProjectInput {
 
                this.clearInputs();
           }
-     }
-
-     private configure() {
-          this.element.addEventListener(
-               "submit",
-               this.submitHandler.bind(this)
-          ); // listen to button selection or on click
      }
 }
 
